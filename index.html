@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Mom's Task List</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      font-family: "Segoe UI", sans-serif;
+      background: #fff9f0;
+      margin: 0;
+      padding: 2rem;
+      color: #444;
+    }
+
+    h1 {
+      text-align: center;
+      color: #c75b39;
+    }
+
+    #taskInput {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+
+    button {
+      background-color: #f49e68;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      font-size: 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-bottom: 1rem;
+    }
+
+    button:hover {
+      background-color: #e3854a;
+    }
+
+    ul {
+      list-style-type: none;
+      padding: 0;
+    }
+
+    li {
+      background: #fff;
+      padding: 10px;
+      margin-bottom: 8px;
+      border-radius: 6px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    li input[type="text"] {
+      flex: 1;
+      font-size: 1rem;
+      border: none;
+      background: transparent;
+      outline: none;
+    }
+
+    li input[type="checkbox"] {
+      transform: scale(1.3);
+      margin-left: 12px;
+    }
+
+    .completed {
+      text-decoration: line-through;
+      color: #888;
+    }
+
+    h2 {
+      margin-top: 2rem;
+      margin-bottom: 0.5rem;
+      color: #c75b39;
+    }
+  </style>
+</head>
+<body>
+  <h1>📝 Mom's Daily Tasks</h1>
+
+  <!-- Manual input -->
+  <input type="text" id="taskInput" placeholder="Write a new task here..." />
+  <button onclick="addTask()">➕ Add Task</button>
+
+  <h2>🌞 Daily Routines</h2>
+  <ul id="routineList"></ul>
+
+  <h2>📌 Custom Tasks</h2>
+  <ul id="taskList"></ul>
+
+  <script>
+    const taskInput = document.getElementById('taskInput');
+    const taskList = document.getElementById('taskList');
+    const routineList = document.getElementById('routineList');
+
+    const defaultRoutines = [
+      "Brushing",
+      "Bathing",
+      "Exercise",
+      "Mopping"
+    ];
+
+    let routineTasks = JSON.parse(localStorage.getItem('momRoutines')) || defaultRoutines.map(text => ({ text, done: false }));
+    let customTasks = JSON.parse(localStorage.getItem('momTasks')) || [];
+
+    function saveTasks() {
+      localStorage.setItem('momTasks', JSON.stringify(customTasks));
+      localStorage.setItem('momRoutines', JSON.stringify(routineTasks));
+    }
+
+    function renderTasks() {
+      // Render Routines
+      routineList.innerHTML = '';
+      routineTasks.forEach((task, index) => {
+        const li = createTaskItem(task, (updated) => {
+          routineTasks[index] = updated;
+          saveTasks();
+        });
+        routineList.appendChild(li);
+      });
+
+      // Render Custom Tasks (incomplete first)
+      taskList.innerHTML = '';
+      const sorted = [...customTasks].sort((a, b) => a.done - b.done);
+      sorted.forEach((task, index) => {
+        const li = createTaskItem(task, (updated) => {
+          const actualIndex = customTasks.findIndex(t => t === task);
+          customTasks[actualIndex] = updated;
+          saveTasks();
+          renderTasks(); // Refresh sort
+        });
+        taskList.appendChild(li);
+      });
+    }
+
+    function createTaskItem(task, onUpdate) {
+      const li = document.createElement('li');
+
+      const textInput = document.createElement('input');
+      textInput.type = 'text';
+      textInput.value = task.text;
+      textInput.className = task.done ? 'completed' : '';
+      textInput.oninput = () => {
+        task.text = textInput.value;
+        onUpdate({ ...task });
+      };
+
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.checked = task.done;
+      checkbox.onchange = () => {
+        task.done = checkbox.checked;
+        textInput.className = task.done ? 'completed' : '';
+        onUpdate({ ...task });
+      };
+
+      li.appendChild(textInput);
+      li.appendChild(checkbox);
+      return li;
+    }
+
+    function addTask() {
+      const newText = taskInput.value.trim();
+      if (newText === '') return;
+
+      customTasks.push({ text: newText, done: false });
+      taskInput.value = '';
+      renderTasks();
+      saveTasks();
+    }
+
+    renderTasks();
+  </script>
+</body>
+</html>
